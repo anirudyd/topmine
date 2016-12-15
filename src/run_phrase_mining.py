@@ -1,5 +1,6 @@
 import phrase_mining
 import sys
+import utils
 
 arguments = sys.argv
 print 'Running Phrase Mining...'
@@ -17,4 +18,8 @@ alpha=4
 max_phrase_size=10
 
 phrase_miner = phrase_mining.PhraseMining(file_name, min_support, max_phrase_size, alpha);
-phrase_miner.mine()
+partitioned_docs, index_vocab = phrase_miner.mine()
+frequent_phrases = phrase_miner.get_frequent_phrases(min_support)
+utils.store_partitioned_docs(partitioned_docs)
+utils.store_vocab(index_vocab)
+utils.store_frequent_phrases(frequent_phrases)

@@ -15,6 +15,3 @@ print get_output_of(phrase_mining_cmd)
 
 phrase_lda_cmd = "pypy src/run_phrase_lda.py {0}".format(num_topics)
 print get_output_of(phrase_lda_cmd)
-
-post_process_cmd = "pypy src/post_process.py {0}".format(num_topics)
-print get_output_of(post_process_cmd)

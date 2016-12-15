@@ -27,7 +27,7 @@ class PhraseMining(object):
         self.file_name = file_name
 
     def mine(self):
-        self._run_phrase_mining(self.min_support, self.max_phrase_size, self.alpha, self.file_name)
+        return self._run_phrase_mining(self.min_support, self.max_phrase_size, self.alpha, self.file_name)
 
     def _frequentPatternMining(self, documents, min_support, max_phrase_size, word_freq, active_indices):
         """
@@ -158,74 +158,6 @@ class PhraseMining(object):
         
         return (actual_occurence-expected_occurence)/math.sqrt(max(actual_occurence, expected_occurence))
 
-    def _store_vocab(self, index_vocab):
-        """
-        Stores vocabulary into a file.
-        """
-        f = open('intermediate_output/vocab.txt', 'w')
-        for word in index_vocab:
-            f.write(word+"\n")
-        f.close()
-
-    def _store_phrases(self, hash_counter, min_support, vocab):
-        """
-        Stores the phrases extracted from phrase mining into a file.
-        """
-        f = open('intermediate_output/phrases.txt', 'w')
-        for key,value in hash_counter.most_common():
-            if value >= min_support and len(key.split(" "))>1:
-                f.write(self._string_to_int(key.split(), vocab)+", "+str(value)+"\n")
-            elif value < min_support:
-                break
-        f.close()
-
-    def _store_partitioned_docs(self, partitioned_docs,vocab_size, num_docs):
-        """
-        Stores the partitioned document (i.e. the original document from which
-        the stopwords have been removed) into a file.
-        """
-        vocab = {}
-        index_vocab = []
-        counter = 0
-        doc_num = 0
-        f = open('intermediate_output/partitioneddocs.txt', 'w')
-        for doc in partitioned_docs:
-            num_doc = ""
-            for phrase in doc:
-                num_phrase = ""
-                for word in phrase.split():
-                    if word not in vocab:
-                        vocab[word] = counter
-                        index_vocab.append(word)
-                        counter += 1
-                    
-                    if(num_phrase == ""):
-                        num_phrase += str(vocab[word])
-                    else:
-                        num_phrase += " "+ str(vocab[word])
-                        
-                if(num_doc == ""):
-                    num_doc += num_phrase
-                else:
-                    num_doc += " ,"+ num_phrase
-            f.write(num_doc+"\n")
-            doc_num += 1
-        f.close() 
-        return vocab, index_vocab
-
-    def _string_to_int(self, phrase, vocab):
-        """
-        Returns the original string given its numerical representation in 
-        the vocabulary.
-        """
-        res = ""
-        for word in phrase:
-            if res == "":
-                res += str(vocab[word])
-            else:
-                res += " "+str(vocab[word])
-        return res
-
     def _get_true_frequency(self, hash_counter):
         """
         Updates the raw frequency of the phrases to get their true frequencies.
@@ -286,6 +218,24 @@ class PhraseMining(object):
             start = end
 
         return partitioned_docs
+
+    def _process_partitioned_docs(self, partitioned_docs):
+        self.vocab = {}
+        self.index_vocab = []
+        self.partitioned_docs = []
+        word_counter = 0
+        for document_index, document in enumerate(partitioned_docs):
+            document_of_phrases = []
+            for phrase in document:
+                phrases_of_words = []
+                for word in phrase.split():
+                    if word not in self.vocab:
+                        self.vocab[word] = word_counter
+                        self.index_vocab.append(word)
+                        word_counter += 1
+                    phrases_of_words.append(self.vocab[word])
+                document_of_phrases.append(phrases_of_words)
+            self.partitioned_docs.append(document_of_phrases)
 
     def _preprocess_input(self, filename, stopwords):
         """
@@ -348,11 +298,23 @@ class PhraseMining(object):
             doc_phrases.append(self._agglomerative_clustering(doc, hash_counter, alpha, total_words))
 
         #update true count of each phrase
-        true_counter = self._get_true_frequency(hash_counter)
+        self.true_counter = self._get_true_frequency(hash_counter)
 
         partitioned_docs = self._get_partitioned_docs(document_range, doc_phrases)
+        self._process_partitioned_docs(partitioned_docs)
 
-        #store the results
-        vocab, index_vocab = self._store_partitioned_docs(partitioned_docs, vocab_size, num_docs)
-        self._store_vocab(index_vocab)
-        self._store_phrases(true_counter, min_support, vocab)
+        return self.partitioned_docs, self.index_vocab
+
+    def get_frequent_phrases(self, min_support):
+        """
+        Returns the most frequent phrases in the corpus that occur more than 
+        the minimum support in descending order of frequency
+        """
+        frequent_phrases = []
+        for key,value in self.true_counter.most_common():
+            if value >= min_support and len(key.split(" "))>1:
+                frequent_phrases.append((key, value))
+            elif value < min_support:
+                break
+        return frequent_phrases
+

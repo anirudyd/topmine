@@ -1,9 +1,10 @@
 from __future__ import division
 import dirichlet
-from random import randint
-from random import uniform
+import random
+import utils
 import math
-from operator import add
+from collections import Counter
+
 
 class PhraseLDA(object):
 
@@ -102,7 +103,7 @@ class PhraseLDA(object):
         for document_index, document in enumerate(self.documents):
             document_phrases_topic = []
             for phrase_index, phrase in enumerate(document):
-                document_phrase_topic = randint(0,self.num_topics-1)
+                document_phrase_topic = random.randint(0,self.num_topics-1)
                 document_phrases_topic.append(document_phrase_topic)
                 
                 # Increase counts
@@ -125,7 +126,7 @@ class PhraseLDA(object):
                                          for __ in range(self.num_topics)]
 
     def _sample_topic(self, sampling_probabilities):
-        threshold = uniform(0.0,1.0) * sum(sampling_probabilities)
+        threshold = random.uniform(0.0,1.0) * sum(sampling_probabilities)
         cumulative_sum = 0
         for topic in range(self.num_topics):
             cumulative_sum += sampling_probabilities[topic]
@@ -156,7 +157,7 @@ class PhraseLDA(object):
         self._initialize()        
         for iteration in range(self.iterations):
             if iteration % 100 == 0:
-                print iteration
+                print "iteration", iteration
 
             for document_index, document in enumerate(self.documents):
                 for phrase_index, phrase in enumerate(document):
@@ -182,7 +183,9 @@ class PhraseLDA(object):
 
             if self._should_optimize(iteration):
                 self._optimize_hyperparameters()
-        return self.documents_phrases_topic
+        
+        topics = self._getTopics()
+        return self.documents_phrases_topic, self._getMostFrequentPhrasalTopics(topics)
 
     def _optimize_hyperparameters(self):
         self._init_topic_document_histogram()
@@ -217,3 +220,31 @@ class PhraseLDA(object):
         for document in self.documents_phrases_topic:
             f.write(",".join(str(phrase) for phrase in document))
             f.write("\n")
+
+    def _getTopics(self):
+        """
+        Returns the set of phrases modelling each document.
+        """
+        topics = []
+        for i in range(self.num_topics):
+            topics.append(Counter())
+        for document_index, document in enumerate(self.documents_phrases_topic):
+            for phrase_index, phrase_topic in enumerate(document):
+                phrase = " ".join(str(word) for word in self.documents[document_index][phrase_index])
+                topics[phrase_topic][phrase] += 1
+        return topics
+
+    def _getMostFrequentPhrasalTopics(self, topics):
+        output = []
+        topic_index = 0
+        for topic in topics:
+            output_for_topic = []
+            print "topic", topic_index
+            for phrase, count in topic.most_common():
+                if len(phrase.split(" ")) > 1:
+                    val = utils._get_string_phrase(phrase, self.index_vocab), count
+                    output_for_topic.append(val)
+                    print val
+            output.append(output_for_topic)
+            topic_index += 1
+        return output
