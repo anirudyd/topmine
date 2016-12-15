@@ -10,8 +10,8 @@ def get_output_of(command):
 file_name="input/dblp_5k.txt"
 num_topics=4
 
-phrase_mining_cmd = "pypy src/run_phrase_mining.py {0}".format(file_name)
+phrase_mining_cmd = "pypy topmine_src/run_phrase_mining.py {0}".format(file_name)
 print get_output_of(phrase_mining_cmd)
 
-phrase_lda_cmd = "pypy src/run_phrase_lda.py {0}".format(num_topics)
+phrase_lda_cmd = "pypy topmine_src/run_phrase_lda.py {0}".format(num_topics)
 print get_output_of(phrase_lda_cmd)

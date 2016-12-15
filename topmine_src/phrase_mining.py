@@ -178,7 +178,7 @@ class PhraseMining(object):
         """
         Returns a list of stopwords.
         """
-        f = open("src/stopwords.txt")
+        f = open("topmine_src/stopwords.txt")
         stopwords = set()
         for line in f:
             stopwords.add(line.rstrip())
